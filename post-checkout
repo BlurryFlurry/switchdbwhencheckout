@@ -10,12 +10,16 @@ checkoutType=$3
 
 [[ $checkoutType == 1 ]] && checkoutType='branch' ||                             
                             checkoutType='file' ;                                
-
 echo 'Checkout type: '$checkoutType                                              
 echo '    prev HEAD: '`git name-rev --name-only $prevHEAD`                       
 echo '     new HEAD: '`git name-rev --name-only $newHEAD`
 
-if [ $checkoutType == 'branch']
+if [ $checkoutType == 'branch' ]
 then
-	echo branch only
+	prevBranch=$(git name-rev --name-only $prevHEAD)
+	newBranch=$(git name-rev --name-only $newHEAD)
+	if [ $prevBranch != $newBranch  ]
+	then
+		echo yes you really changed the branch!
+	fi
 fi
