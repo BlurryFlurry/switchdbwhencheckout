@@ -7,7 +7,7 @@ printf '\npost-checkout hook\n\n'
 prevHEAD=$1                                                                      
 newHEAD=$2                                                                       
 checkoutType=$3                                                                  
-
+confPath=config.php
 [[ $checkoutType == 1 ]] && checkoutType='branch' ||                             
                             checkoutType='file' ;                                
 echo 'Checkout type: '$checkoutType                                              
@@ -16,6 +16,13 @@ echo '     new HEAD: '`git name-rev --name-only $newHEAD`
 
 if [ $checkoutType == 'branch' ]
 then
+	dbuser=$(grep username $confPath|cut -d\' -f6)
+
+	dbpass=$(grep password $confPath|cut -d\' -f6)
+
+	dbname=$(grep dbname $confPath|cut -d\' -f6)
+
 	currentBranch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
-	echo now you are in $currentBranch
+
+	echo now you are in $currentBranch dbusr $dbuser dbpass $dbpass dbname $dbname
 fi
