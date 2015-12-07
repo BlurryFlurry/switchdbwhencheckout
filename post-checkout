@@ -15,6 +15,6 @@ echo 'Checkout type: '$checkoutType
 echo '    prev HEAD: '`git name-rev --name-only $prevHEAD`                       
 echo '     new HEAD: '`git name-rev --name-only $newHEAD`
 
-if [$checkoutType == 'branch']
+if [$checkoutType == 'branch']; then
 	echo branch only
 fi
