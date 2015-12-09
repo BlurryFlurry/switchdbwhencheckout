@@ -21,6 +21,14 @@ then
 	dbpass=$(grep password $confPath|cut -d\' -f6)
 
 	dbname=$(grep dbname $confPath|cut -d\' -f6)
+	
+	#this dbpostfix is useless
+	dbpostfix=${dbname##*_}
+
+	#cut off the old postfix
+	db=${dbname%_$dbpostfix}
+
+	newDb=$db_\$currentBranch
 
 	tmperrorfile=/tmp/mysqlDbCheckErrors$RANDOM
 
@@ -32,7 +40,7 @@ then
 		{ mysqlshow -u$dbuser -p$dbpass $dbname 2>$tmperrorfile
 		
 		} && 	{
-				expression="/\| $dbname +\|\$/{s//replace/;h};\${x;/./{x;q0};x;q1}"
+				expression="/\| $newDb +\|\$/{s//replace/;h};\${x;/./{x;q0};x;q1}"
 
 				if (mysqlshow -u$dbuser -p$dbpass | sed -n -r "$expression")
 				then
@@ -56,14 +64,9 @@ then
 						if [[ $currentBranch!=$(git name-rev --name-only $prevHEAD) ]]
 						#db dump and restore code goes here
 						then
-							#this dbpostfix is useless
-							dbpostfix=${dbname##*_}
-
-							#cut off the old postfix
-							db=${dbname%_$dbpostfix}
-						
+							
+													
 							#new postfix is the current branch
-							newDb=$db_\$currentBranch
 
 							rm $tmperrorfile
 
