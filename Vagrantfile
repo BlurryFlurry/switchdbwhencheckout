@@ -66,8 +66,12 @@ config.vm.synced_folder "./html", "/var/www/html"
   # Enable provisioning with a shell script. Additional provisioners such as
   # Puppet, Chef, Ansible, Salt, and Docker are also available. Please see the
   # documentation for more information about their specific syntax and use.
-  # config.vm.provision "shell", inline: <<-SHELL
-  #   sudo apt-get update
-  #   sudo apt-get install -y apache2
-  # SHELL
+   config.vm.provision "shell", inline: <<-SHELL
+     sudo yum install epel-release -y || yum rpm -ivUh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
+     sudo rpm -ivUh http://rpms.famillecollet.com/enterprise/remi-release-7.rpm && sudo yum install phpmyadmin php php-cli httpd mariadb mariadb-server git -y
+
+     sudo systemctl enable mariadb httpd && systemctl start mariadb httpd
+     sudo iptables -F
+     sudo localectl set-locale LANG=en_US.utf8 && localectl set-keymap us
+   SHELL
 end
