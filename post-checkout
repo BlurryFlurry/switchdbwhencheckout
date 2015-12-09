@@ -7,7 +7,7 @@ printf '\npost-checkout hook\n\n'
 prevHEAD=$1                                                                      
 newHEAD=$2                                                                       
 checkoutType=$3                                                                  
-confPath=config.php
+confPath=html/config.php
 [[ $checkoutType == 1 ]] && checkoutType='branch' ||                             
                             checkoutType='file' ;                                
 echo 'Checkout type: '$checkoutType                                              
@@ -22,7 +22,53 @@ then
 
 	dbname=$(grep dbname $confPath|cut -d\' -f6)
 
+	tmperrorfile=/tmp/mysqlDbCheckErrors$RANDOM
+
 	currentBranch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
 
-	echo now you are in $currentBranch dbusr $dbuser dbpass $dbpass dbname $dbname
+	echo now you are in $currentBranch branch
+	echo dbusr: $dbuser dbpass: $dbpass dbname: $dbname
+
+		{ mysqlshow -u$dbuser -p$dbpass $dbname 2>$tmperrorfile
+		
+		} && 	{
+				expression="/\| $dbname +\|\$/{s//replace/;h};\${x;/./{x;q0};x;q1}"
+
+				if (mysqlshow -u$dbuser -p$dbpass | sed -n -r "$expression")
+				then
+					echo Note: db exist, no need to create.
+				else
+					echo -e "\e[31mError: \e[39mSomething is wrong. can't find the database $dbname"
+				fi
+
+			} || 	{
+					dbSearchError=$(cat $tmperrorfile)
+					if [[ $dbSearchError == *"command not found"* ]]
+					then
+						echo Note: Checkout the branch inside the vagrant box \
+						so database can be switched/create
+						rm $tmperrorfile
+					elif [[ $dbSearchError == *"Unknown database"* ]]
+					then
+						echo -e "\e[33mWarning: \e[39mDatabase doesn't exist. \
+						attempting to clone the db.."
+
+						if [[ $currentBranch!=$(git name-rev --name-only $prevHEAD) ]]
+						#db dump and restore code goes here
+						then
+							dbpostfix=${dbname##*_}
+
+							db=${dbname%_$dbpostfix}
+						
+							newDb=$db_\$currentBranch
+							rm $tmperrorfile
+							echo $dbname to $newDb
+						else
+							echo -e "\e[31mTerminal Error:\e[39m] Previous and current \
+								branches are looks same. did you just merged?"
+								
+						fi
+
+					fi
+				}
 fi
