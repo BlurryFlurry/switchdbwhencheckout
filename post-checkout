@@ -56,12 +56,21 @@ then
 						if [[ $currentBranch!=$(git name-rev --name-only $prevHEAD) ]]
 						#db dump and restore code goes here
 						then
+							#this dbpostfix is useless
 							dbpostfix=${dbname##*_}
 
+							#cut off the old postfix
 							db=${dbname%_$dbpostfix}
 						
+							#new postfix is the current branch
 							newDb=$db_\$currentBranch
+
 							rm $tmperrorfile
+
+							#create the new database
+							mysql -u $dbuser -p$dbpass -e "create database $newDb"
+							#clone the db into created new database
+							mysqldump --opt -Q -u $dbuser -p$dbpass $dbname | mysql -u $dbuser -p$dbpass $newDb
 							echo $dbname to $newDb
 						else
 							echo -e "\e[31mTerminal Error:\e[39m] Previous and current \
