@@ -39,7 +39,7 @@ config.vm.network "forwarded_port", guest: 80, host: 8080
   # argument is a set of non-required options.
 
 config.vm.synced_folder "./", "/this_repo"
-config.vm.synced_folder "./html", "/var/www/html"
+  # config.vm.synced_folder "./html", "/var/www/html"
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.
@@ -73,5 +73,7 @@ config.vm.synced_folder "./html", "/var/www/html"
      sudo systemctl enable mariadb httpd && systemctl start mariadb httpd
      sudo iptables -F
      sudo localectl set-locale LANG=en_US.utf8 && localectl set-keymap us
+     rmdir /var/www/html
+     ln -s /this_repo/html /var/www/html
    SHELL
 end
