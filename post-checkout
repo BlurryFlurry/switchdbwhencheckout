@@ -91,12 +91,29 @@ function cloneDatabase(){
 }
 
 
+
+function get_dbname_to(){
+	local databasename=$(grep "original_dbname = '" $confPath | cut -d\' -f2)
+	eval "$1='$databasename'"
+}
+function get_dbuser_to(){
+	local username=$(grep username $confPath|cut -d\' -f6)
+	eval "$1='$username'"
+}
+function get_dbpass_to(){
+	local password=$(grep password $confPath|cut -d\' -f6)
+	eval "$1='$password'"
+}
+
 ###################################################################
 
+dbname=''
+dbuser=''
+dbpass=''
+get_dbname_to dbname
+get_dbuser_to dbuser
+get_dbpass_to dbpass
 
-dbuser=$(grep username $confPath|cut -d\' -f6)
-
-dbpass=$(grep password $confPath|cut -d\' -f6)
 
 dbname=$(grep dbname $confPath|cut -d\' -f6)
 
