@@ -12,7 +12,7 @@ echo 'Checkout type: '$checkoutType
 echo '    prev HEAD: '`git name-rev --name-only $prevHEAD`                       
 echo '     new HEAD: '`git name-rev --name-only $newHEAD`
 
-
+# Modify inside of this function (NOTEZ array) if you wanna translate phrases
 function show_notes(){
 
 	declare -A NOTEZ
@@ -41,6 +41,7 @@ function show_notes(){
 	eval $noteCase
 }
 
+# This function returns false if the database is present.
 function assertDbNotExist() {
 
 	mysqlshow >/dev/null 2>&1
@@ -73,6 +74,7 @@ function assertDbNotExist() {
 	fi
 }
 
+# use this function to create new mysql databases.
 function createDatabase(){
 	assertDbNotExist $1
 	if [[ $? -eq 0 ]]; then
@@ -81,6 +83,7 @@ function createDatabase(){
 		fi	
 }
 
+# use this function for clonning databases process.
 function cloneDatabase(){
 	
 	assertDbNotExist $6 redMode && return 1 || {
@@ -90,18 +93,23 @@ function cloneDatabase(){
 	}
 }
 
-
-
+## Detect the database settings by parsing the config.php file (You can modify inside of these functions)
 function get_dbname_to(){
+	#parse command
 	local databasename=$(grep "original_dbname = '" $confPath | cut -d\' -f2)
+	#return the value
 	eval "$1='$databasename'"
 }
 function get_dbuser_to(){
+	#parse command
 	local username=$(grep username $confPath|cut -d\' -f6)
+	#return the value
 	eval "$1='$username'"
 }
 function get_dbpass_to(){
+	#parse command
 	local password=$(grep password $confPath|cut -d\' -f6)
+	#return the value
 	eval "$1='$password'"
 }
 
@@ -132,7 +140,7 @@ newDb=$db\_$currentBranch
 echo -e "now you are in $currentBranch branch\n"
 # echo dbusr: $dbuser dbpass: $dbpass oldDb: $oldDb newDb: $newDb
 
-# if this isn't a 'branch' type checkout, this script will stop executing.
+# if this checkout isn't a 'branch' type checkout, this script will stop executing.
 [[ $checkoutType != "branch" ]] && exit
 
 # if previous and new HEADs are equal, this script will stop executing.
@@ -144,13 +152,13 @@ echo -e "now you are in $currentBranch branch\n"
 
 
 assertDbNotExist $newDb
-# if SQL detection failed or newDb already exist, this script will stop executing.
+# if mysql commands aren't working or newDb already exist, this script will stop executing.
 [[ $CURRENTERROR == "eSQLDETECTFAIL" ]] || [[ $CURRENTERROR == "nDBEXIST" ]] && {
 	show_notes
 	exit 1
 }
 
-# Create DB and Clone
+# Create the new database
 show_notes
 createDatabase $newDb
 
@@ -161,5 +169,6 @@ createDatabase $newDb
 }
 show_notes
 
+# when everything looks good, execute the clone function
 cloneDatabase $dbuser $dbpass $oldDb $dbuser $dbpass $newDb
 show_notes
