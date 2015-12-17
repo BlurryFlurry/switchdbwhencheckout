@@ -1,16 +1,33 @@
 #!/bin/bash                                                                      
 
 set -e                                                                           
+#############################################################################
+# Please enable the debug mode and verify these 3 functions:
+# 1) 'get_dbname_to'
+# 2) 'get_dbuser_to'
+# 3) 'get_dbpass_to'
+# are working properly.
+#############################################################################
+debug=1
+
 
 prevHEAD=$1
 newHEAD=$2
 checkoutType=$3
+currentBranch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
+
+# Correct the path to your configuration file by changing the value of this variable
 confPath=html/config.php
+
+
 [[ $checkoutType == 1 ]] && checkoutType='branch' || checkoutType='file' ;
 printf '\n'
 echo 'Checkout type: '$checkoutType                                              
 echo '    prev HEAD: '`git name-rev --name-only $prevHEAD`                       
 echo '     new HEAD: '`git name-rev --name-only $newHEAD`
+
+[[ $debug == 1 ]] && echo -e "\e[33m debug:\e[39m Prev HEAD is: $prevHEAD \n\
+                     New HEAD is: $newHEAD"
 
 # Modify inside of this function (NOTEZ array) if you wanna translate phrases
 function show_notes(){
@@ -22,12 +39,18 @@ function show_notes(){
 	NOTEZ[eNODBEXIST]="\e[31mError:\e[39m database '$thisDb' is not exist."
 	NOTEZ[eSQLDETECTFAIL]="\e[31mTerminal Error:\e[39m mysql not detected."
 	NOTEZ[gDBCREATED]="\e[32mNote:\e[39m Database '$thisDb' successfully created."
-	NOTEZ[eNOPERMISSION]="\e[31mError:\e[39m Cannot create database '$thisDb' Please check permission on '$dbuser' user."
+	NOTEZ[eNOCREATEDBPERMISSION]="\e[31mError:\e[39m Cannot create database '$thisDb' Please check permission on '$dbuser' user."
+	NOTEZ[eNOPERMISSION]="\e[31mError:\e[39m Command Failed. May be a permission problem."
 	NOTEZ[eSAMEHEAD]="\e[31mTerminal Error:\e[39m Unable to detect the previous branch.\n\
-	This usually happens when the previous and current heads are equal. (When you merge branches SHA Hashes will become equal.)\n\
-	(There is no way to detect the 'previous branch' when the 'previous' and 'current' HEADs are equal)"
+	This can happens when the previous and current heads are equal.\n\
+	1. This usually happens when you checkout to the same branch. \n\
+	2. Or when you run the checkout command after you merge with a branch so SHA Hashes are equal between them.\n\
+	(Git only pass the previous, current HEADs hashes to the hook instead of passing BRANCH names. Which means no way to detect the 'previous branch' in these situations.\n\
+	Impotent notice: Even when you can see the \\\$oldDb variable values has set to the correct prefix in debug messages, that doesn't mean it can detect correctly.\n\
+	Try checkout to the same branch and see.\n\
+	\e[32mYou can prevent this error by making a simple commit (In case you are on a merged commit)\e[39m"
 	NOTEZ[nCLONESTART]="note: Attempting to clone the database...."
-	NOTEZ[eCLONEFAILED]="\e[31mError:\e[39m Something whent wrong :( Cannot clone the database from '$oldDb' to $newDb"
+	NOTEZ[eCLONEFAILED]="\e[31mError:\e[39m Something went wrong :( Cannot clone the database from '$oldDb' to $newDb"
 	NOTEZ[gCLONESUCCESS]="\e[32mNote:\e[39m Cloning process successfully completed.\n'$oldDb' cloned into => '$newDb'."
 	
 	local noteCase="case \$CURRENTERROR in"
@@ -44,13 +67,13 @@ function show_notes(){
 # This function returns false if the database is present.
 function assertDbNotExist() {
 
-	mysqlshow >/dev/null 2>&1
-	if [[ $? != 127 ]]; then
+	mysqlshow -u $dbuser -p$dbpass >/dev/null 2>&1 && {
 		thisDb=$1
 		local expression="/\| $thisDb +\|\$/{s//replace/;h};\${x;/./{x;q0};x;q1}"
-		# echo $expression
+		[[ $debug == 1 ]] && echo -e "\e[33m debug:\e[39m expression: $expression"
 		mysqlshow -u$dbuser -p$dbpass | sed -n -r "$expression"
-		if [[ $? -eq 0 ]]; then
+
+		[[ $? == 0 ]] && {
 			[[ $2 == "redMode" ]] && {
 				CURRENTERROR="eDBEXIST"
 				return 1
@@ -58,7 +81,7 @@ function assertDbNotExist() {
 				CURRENTERROR="nDBEXIST"
 				return 1
 			}
-		else
+		} || {
 			[[ $2 == "redMode" ]] && {
 				CURRENTERROR="eNODBEXIST"
 				return 0
@@ -66,12 +89,18 @@ function assertDbNotExist() {
 				CURRENTERROR="nNODBEXIST"
 				return 0
 			}
-		fi
-	else
-		CURRENTERROR="eSQLDETECTFAIL"
-		return 127
+		}
 
-	fi
+
+	} || {
+		[[ $? == 127 ]] && {
+			CURRENTERROR="eSQLDETECTFAIL"
+			return 127
+		} || {
+			CURRENTERROR="eNOPERMISSION"
+			return 1
+		}
+	}
 }
 
 # use this function to create new mysql databases.
@@ -79,7 +108,7 @@ function createDatabase(){
 	assertDbNotExist $1
 	if [[ $? -eq 0 ]]; then
 			thisDb=$1
-			mysql -u $dbuser -p$dbpass -e "create database $thisDb" && CURRENTERROR="gDBCREATED" || CURRENTERROR="eNOPERMISSION"
+			mysql -u $dbuser -p$dbpass -e "create database $thisDb" && CURRENTERROR="gDBCREATED" || CURRENTERROR="eNOCREATEDBPERMISSION"
 		fi	
 }
 
@@ -122,8 +151,7 @@ get_dbname_to dbname
 get_dbuser_to dbuser
 get_dbpass_to dbpass
 
-
-dbname=$(grep dbname $confPath|cut -d\' -f6)
+[[ $debug == 1 ]] && echo -e "\e[33m debug:\e[39m dbname: $dbname dbusr: $dbuser dbpass: $dbpass"
 
 #this dbpostfix is useless
 dbpostfix=${dbname##*_}
@@ -131,14 +159,14 @@ dbpostfix=${dbname##*_}
 #cut off this old postfix
 db=${dbname%_$dbpostfix}
 
-currentBranch=$(git branch | sed -n -e 's/^\* \(.*\)/\1/p')
 
 oldDb=$db\_`git name-rev --name-only $prevHEAD`
 
 newDb=$db\_$currentBranch
 
 echo -e "now you are in $currentBranch branch\n"
-# echo dbusr: $dbuser dbpass: $dbpass oldDb: $oldDb newDb: $newDb
+
+[[ $debug == 1 ]] && echo -e "\e[33m debug:\e[39m dbusr: $dbuser dbpass: $dbpass oldDb: $oldDb newDb: $newDb"
 
 # if this checkout isn't a 'branch' type checkout, this script will stop executing.
 [[ $checkoutType != "branch" ]] && exit
@@ -163,7 +191,7 @@ show_notes
 createDatabase $newDb
 
 # if creating new database was failed, this script will stop executing.
-[[ $CURRENTERROR == "eNOPERMISSION" ]] && {
+[[ $CURRENTERROR == "eNOCREATEDBPERMISSION" ]] && {
 	show_notes
 	exit 1
 }
