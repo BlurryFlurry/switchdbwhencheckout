@@ -1,6 +1,6 @@
 #!/bin/bash                                                                      
 
-set -e                                                                           
+
 #############################################################################
 # Please enable the debug mode and verify these 3 functions:
 # 1) 'get_dbname_to'
@@ -103,6 +103,7 @@ function assertDbNotExist() {
 	}
 }
 
+
 # use this function to create new mysql databases.
 function createDatabase(){
 	assertDbNotExist $1
@@ -144,12 +145,12 @@ function get_dbpass_to(){
 
 ###################################################################
 
-dbname=''
-dbuser=''
-dbpass=''
-get_dbname_to dbname
-get_dbuser_to dbuser
-get_dbpass_to dbpass
+dbname='' # don't edit these lines
+dbuser='' # don't edit these lines
+dbpass='' # don't edit these lines
+get_dbname_to dbname # don't edit these lines
+get_dbuser_to dbuser # don't edit these lines
+get_dbpass_to dbpass # don't edit these lines
 
 [[ $debug == 1 ]] && echo -e "\e[33m debug:\e[39m dbname: $dbname dbusr: $dbuser dbpass: $dbpass"
 
@@ -185,7 +186,6 @@ assertDbNotExist $newDb
 	show_notes
 	exit 1
 }
-
 # Create the new database
 show_notes
 createDatabase $newDb

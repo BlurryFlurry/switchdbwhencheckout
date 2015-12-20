@@ -7,7 +7,7 @@ if (file_exists($path_to_git_head)) {
  	$git_head_exploded = explode("/", $git_head);
  	$git_branch = rtrim($git_head_exploded[2]);
  	$original_dbname = 'ekdev';
- 	$dbnameWithBranchPrefix = $original_dbname . "_" . $git_branch;
+ 	$dbnameWithBranchPostfix = $original_dbname . "_" . $git_branch;
 	}
 }
 
@@ -15,7 +15,7 @@ $config['db']['host'] = 'localhost';
 $config['db']['port'] = '3306';
 $config['db']['username'] = 'ekdevusr';
 $config['db']['password'] = 'ekdevpw';
-$config['db']['dbname'] = isset($dbnameWithBranchPrefix) ? $dbnameWithBranchPrefix : 'ekdev'; 
+$config['db']['dbname'] = isset($dbnameWithBranchPostfix) ? $dbnameWithBranchPostfix : 'ekdev'; 
 $config['debug'] = 'enable';
 
 
